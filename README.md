@@ -17,6 +17,16 @@ python src/select_images.py
 GUI that show images at `images/undefined/` directory and moves to 
 `images/positives/` or `images/negatives/`.
 
+## Remove duplicate images
+
+```python
+python src/find_dupes.py
+```
+
+Using image average hash, move to a duplicates directory the image that are
+similar to others in the `images/undefined/` directory. In this case, similar
+means a Hamming distance of the hashes less than or equal to one.
+
 ## Training SVM model
 
 - Use `src/params.py` to define the parameters for the HOG descriptor.
