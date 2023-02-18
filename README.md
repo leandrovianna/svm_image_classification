@@ -2,7 +2,12 @@
 
 Image Classification using Histogram of Gradients (HOG) and Support Vector 
 Machines (SVM). This code is for learning purposes. Using HOG and SVM 
-implementations from OpenCV.
+implementations from OpenCV and Python.
+
+## Installing libraries
+
+`requirements.txt` has the necessaries libraries. 
+Run `pip install -r requirements.txt`.
 
 ## Tkinter interface to select images
 
@@ -17,6 +22,8 @@ GUI that show images at `images/undefined/` directory and moves to
 - Use `src/params.py` to define the parameters for the HOG descriptor.
 - With the positive class images at `images/positives/` and the negative class
 images at `images/negatives/`, run `python src/training.py` to train the model.
+- HOG descriptor will be saved on the file `models/hog_last_model.xml`.
+- SVM model will be saved on the file `models/svm_last_model.dat`.
 
 ## Classification
 
