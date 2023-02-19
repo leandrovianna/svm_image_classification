@@ -3,7 +3,7 @@ import numpy as np
 import pathlib
 import os
 import tkinter
-from tkinter.constants import BOTH, EW, TOP, BOTTOM, DISABLED, NORMAL
+from tkinter.constants import BOTH, EW, TOP, BOTTOM
 from PIL import ImageTk, Image
 
 
@@ -12,15 +12,14 @@ class ImageSelector:
     def __init__(self, positives_dir, negatives_dir):
         self.positives_dir = positives_dir
         self.negatives_dir = negatives_dir
+        self.undefined_directory = None
         self.tk = None
         self.big_image_label = None
         self.small_image_label = None
         self.brightness_label = None
-        self.image_iterator = None
-        self.current_image = None
-        self.n_images = 0
-        self.skip_count = 0
-        self.control_buttons = None
+        self.images = None
+        self.current = None
+        self.journal = None
 
     def create_widgets(self):
         self.tk = tkinter.Tk()
@@ -47,8 +46,6 @@ class ImageSelector:
         controls_frame = tkinter.Frame(main_frame)
         controls_frame.grid(column=1, row=1, sticky=EW)
 
-        self.control_buttons = []
-
         positive_button = tkinter.Button(controls_frame,
                                          text="Positive",
                                          background='green',
@@ -58,7 +55,6 @@ class ImageSelector:
                                          font=50,
                                          command=lambda: self.move_image(True))
         positive_button.pack(fill=BOTH, side=TOP)
-        self.control_buttons.append(positive_button)
         negative_button = tkinter.Button(
             controls_frame,
             text="Negative",
@@ -69,90 +65,110 @@ class ImageSelector:
             font=50,
             command=lambda: self.move_image(False))
         negative_button.pack(fill=BOTH, side=BOTTOM)
-        self.control_buttons.append(negative_button)
         skip_button = tkinter.Button(controls_frame,
                                      text="Skip",
                                      font=50,
                                      command=lambda: self.skip(1))
         skip_button.pack(fill=BOTH)
-        self.control_buttons.append(skip_button)
         skip_more_button = tkinter.Button(controls_frame,
                                           text="Skip 10",
                                           font=50,
                                           command=lambda: self.skip(10))
         skip_more_button.pack(fill=BOTH)
-        self.control_buttons.append(skip_more_button)
+        undo_button = tkinter.Button(controls_frame,
+                                     text="Undo",
+                                     font=50,
+                                     command=lambda: self.undo())
+        undo_button.pack(fill=BOTH)
 
     def next_image(self):
-        try:
-            for button in self.control_buttons:
-                button.state = DISABLED
+        self.current += 1
+        while self.current < len(self.images) and not os.path.isfile(
+                self.images[self.current]):
+            self.journal.append(('not_found', None))
+            self.current += 1
 
-            while self.skip_count > 0:
-                next(self.image_iterator)
-                self.skip_count -= 1
-
-            index, self.current_image = next(self.image_iterator)
-
-            while not os.path.exists(self.current_image):
-                index, self.current_image = next(self.image_iterator)
-
-            filename = os.path.basename(self.current_image)
-            self.tk.title(f'{filename} ({index+1}/{self.n_images})')
-
-            image = Image.open(self.current_image)
-
-            self.big_image_label.image = ImageTk.PhotoImage(
-                self.image_resize(image, 640))
-            self.big_image_label.configure(image=self.big_image_label.image)
-            self.small_image_label.image = ImageTk.PhotoImage(
-                self.image_resize(image, 120))
-            self.small_image_label.configure(
-                image=self.small_image_label.image)
-            self.brightness_label.configure(
-                text=f'{filename} ({index+1}/{self.n_images}) - ' +
-                f'Brightness Level: {self.image_brightness(image):.02f}%')
-
-            for button in self.control_buttons:
-                button.state = NORMAL
-
-        except StopIteration:
+        if self.current == len(self.images):
             self.close()
 
+    def update_ui(self):
+        current_image = self.images[self.current]
+        filename = os.path.basename(current_image)
+        self.tk.title(f'{filename} ({self.current+1}/{len(self.images)})')
+
+        image = Image.open(current_image)
+
+        self.big_image_label.image = ImageTk.PhotoImage(
+            self.image_resize(image, 640))
+        self.big_image_label.configure(image=self.big_image_label.image)
+        self.small_image_label.image = ImageTk.PhotoImage(
+            self.image_resize(image, 120))
+        self.small_image_label.configure(image=self.small_image_label.image)
+        self.brightness_label.configure(
+            text=f'{filename} ({self.current+1}/{len(self.images)}) - ' +
+            f'Brightness Level: {self.image_brightness(image):.02f}%')
+
     def move_image(self, is_positive):
+        current_image = self.images[self.current]
         directory = self.positives_dir if is_positive else self.negatives_dir
         dest_img_path = os.path.join(directory,
-                                     os.path.basename(self.current_image))
+                                     os.path.basename(current_image))
         if os.path.exists(dest_img_path):
-            print('{os.path.basename(self.current_image)} already ' +
+            print('{os.path.basename(current_image)} already ' +
                   f'exists at {directory} directory.')
+            self.journal.append(('skip', 1))
         else:
-            os.rename(self.current_image, dest_img_path)
+            os.rename(current_image, dest_img_path)
+            self.journal.append(('move', dest_img_path))
 
         self.next_image()
+        self.update_ui()
 
     def skip(self, count):
-        self.skip_count = count - 1
-        self.next_image()
+        self.journal.append(('skip', count))
+        while count > 0:
+            self.next_image()
+            count -= 1
+        self.update_ui()
+
+    def undo(self):
+        if len(self.journal) > 0:
+            operation, param = self.journal.pop()
+            if operation == 'skip':
+                self.current -= param
+            elif operation == 'move':
+                os.rename(
+                    param,
+                    os.path.join(self.undefined_directory,
+                                 os.path.basename(param)))
+                self.current -= 1
+            elif operation == 'not_found':
+                self.current -= 1
+                return self.undo()
+            elif operation == 'begin':
+                return self.close()
+
+            self.update_ui()
 
     def close(self):
         self.tk.destroy()
 
     def select(self, directory):
+        self.undefined_directory = directory
         imgs_dir = pathlib.Path(directory)
         image_files = [
-            p for p in map(str, imgs_dir.iterdir())
-            if p.endswith('.jpg') or p.endswith('.png')
+            str(p) for p in imgs_dir.iterdir() if p.is_file() and (
+                str(p).endswith('.jpg') or str(p).endswith('.png'))
         ]
         image_files.sort()
 
-        self.n_images = len(image_files)
-        self.current_image = None
-        self.image_iterator = zip(range(self.n_images), iter(image_files))
-        self.skip_count = 0
+        self.images = image_files
+        self.current = -1
+        self.journal = [('begin', None)]
 
         self.create_widgets()
         self.next_image()
+        self.update_ui()
         self.tk.mainloop()
 
     def image_brightness(self, image):

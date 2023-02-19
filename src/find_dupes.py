@@ -21,7 +21,7 @@ def flip(h, i):
     return imagehash.ImageHash(bits)
 
 
-def hash_compare(directory, dups_dir):
+def hash_compare(directory, dups_dir, flip_hash=False):
     hash_bucket = {}
     for img_path in get_images(directory):
         h = imagehash.average_hash(Image.open(img_path))
@@ -32,16 +32,19 @@ def hash_compare(directory, dups_dir):
         else:
             hash_bucket[h] = img_path
 
-    for h in list(hash_bucket):
-        for i in range(len(h)):
-            h2 = flip(h, i)
-            if h2 in hash_bucket and os.path.exists(hash_bucket[h2]):
-                print(f'{hash_bucket[h]} and {hash_bucket[h2]} are similar' +
-                      ' (Hamming distance 1)')
-                os.rename(
-                    hash_bucket[h2],
-                    os.path.join(dups_dir, os.path.basename(hash_bucket[h2])))
-        hash_bucket.pop(h)
+    if flip_hash:
+        for h in list(hash_bucket):
+            for i in range(len(h)):
+                h2 = flip(h, i)
+                if h2 in hash_bucket and os.path.exists(hash_bucket[h2]):
+                    print(
+                        f'{hash_bucket[h]} and {hash_bucket[h2]} are similar' +
+                        ' (Hamming distance 1)')
+                    os.rename(
+                        hash_bucket[h2],
+                        os.path.join(dups_dir,
+                                     os.path.basename(hash_bucket[h2])))
+            hash_bucket.pop(h)
 
 
 if __name__ == '__main__':
