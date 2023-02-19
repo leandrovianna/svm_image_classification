@@ -59,20 +59,24 @@ def load_features(negatives_path, positives_path, hog):
 def separate_datasets(features_neg, features_pos):
     random.shuffle(features_neg)
     random.shuffle(features_pos)
-    train_len = min(len(features_neg) // 2, len(features_pos) // 2)
+    train_neg_len = int(len(features_neg) * 0.8)
+    train_pos_len = int(len(features_pos) * 0.8)
     train_data = []
     train_labels = []
-    train_data.extend(f for f in features_neg[:train_len])
-    train_labels.extend(-1 for _ in range(train_len))
-    train_data.extend(f for f in features_pos[:train_len])
-    train_labels.extend(1 for _ in range(train_len))
+    train_data.extend(f for f in features_neg[:train_neg_len])
+    train_data.extend(f for f in features_pos[:train_pos_len])
+    train_labels.extend(-1 for _ in range(train_neg_len))
+    train_labels.extend(1 for _ in range(train_pos_len))
+    assert (len(train_data) == len(train_labels))
 
     test_data = []
     test_labels = []
-    test_data.extend(f for f in features_neg[train_len:])
-    test_labels.extend(-1 for _ in range(len(features_neg) - train_len))
-    test_data.extend(f for f in features_pos[train_len:])
-    test_labels.extend(1 for _ in range(len(features_pos) - train_len))
+    test_data.extend(f for f in features_neg[train_neg_len:])
+    test_data.extend(f for f in features_pos[train_pos_len:])
+    test_labels.extend(-1 for _ in range(len(features_neg) - train_neg_len))
+    test_labels.extend(1 for _ in range(len(features_pos) - train_pos_len))
+    assert (len(test_data) == len(test_labels))
+
     return train_data, train_labels, test_data, test_labels
 
 
