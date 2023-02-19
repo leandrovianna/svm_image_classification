@@ -59,8 +59,9 @@ def load_features(negatives_path, positives_path, hog):
 def separate_datasets(features_neg, features_pos):
     random.shuffle(features_neg)
     random.shuffle(features_pos)
-    train_neg_len = int(len(features_neg) * 0.8)
-    train_pos_len = int(len(features_pos) * 0.8)
+    percent_cut = 0.9
+    train_neg_len = int(len(features_neg) * percent_cut)
+    train_pos_len = int(len(features_pos) * percent_cut)
     train_data = []
     train_labels = []
     train_data.extend(f for f in features_neg[:train_neg_len])
