@@ -1,6 +1,6 @@
 # Image Classification
 
-Image Classification using Histogram of Gradients (HOG) and Support Vector 
+Image Classification using Histogram of Oriented Gradients (HOG) and Support Vector 
 Machines (SVM). This code is for learning purposes. Using HOG and SVM 
 implementations from OpenCV and Python.
 
@@ -15,7 +15,7 @@ Run `pip install -r requirements.txt`.
 python src/select_images.py
 ```
 GUI that show images at `images/undefined/` directory and moves to 
-`images/positives/` or `images/negatives/`.
+`images/positives/` or `images/negatives/`. Supports skipping and undo.
 
 ## Remove duplicate images
 
