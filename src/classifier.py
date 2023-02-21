@@ -3,10 +3,11 @@ import os
 import cv2 as cv
 import numpy as np
 
-from params import feature_len, win_size, cell_size
-
 hog = cv.HOGDescriptor('models/hog_model.xml')
 svm = cv.ml.SVM.load('models/svm_model.dat')
+
+win_size = hog.winSize
+cell_size = hog.cellSize
 
 file_paths = []
 features = []
@@ -27,7 +28,7 @@ while True:
     except EOFError:
         break
 
-features = np.float32(features).reshape(-1, feature_len)
+features = np.float32(features).reshape(-1, len(features[0]))
 result = svm.predict(features)[1]
 
 visual = True
