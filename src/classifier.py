@@ -17,12 +17,12 @@ while True:
         if file_path and not os.path.exists(file_path):
             print(f'File {file_path} do not exists.')
             continue
-        im = cv.imread(file_path, cv.IMREAD_GRAYSCALE)
+        im = cv.imread(file_path)
         if im is None:
             print(f'Opencv do not opened {file_path}. ' +
                   'Maybe it is not a image.')
             continue
-        assert (im.shape[::-1] == win_size)
+        assert (im.shape[:2][::-1] == win_size)
         features.append(hog.compute(im))
         file_paths.append(file_path)
     except EOFError:
@@ -44,13 +44,19 @@ for file_path, label in zip(file_paths, result):
 
     if visual:
         im = cv.imread(file_path)
+        gx = cv.Sobel(im, cv.CV_32F, 1, 0, ksize=1)
+        gy = cv.Sobel(im, cv.CV_32F, 0, 1, ksize=1)
+        mag, _ = cv.cartToPolar(gx, gy, angleInDegrees=True)
+        mag = mag.astype('uint8')
+
         cv.putText(im, 'POSITIVE' if is_positive else 'NEGATIVE', (100, 100),
                    cv.FONT_HERSHEY_SIMPLEX, 2,
                    (0, 255, 0, 255) if is_positive else (0, 0, 255, 255), 3)
         for x in range(cell_size[0], win_size[0], cell_size[0]):
-            cv.line(im, (x, 0), (x, win_size[1] - 1), (0, 0, 0, 0), 4)
-            cv.line(im, (x, 0), (x, win_size[1] - 1), (0, 255, 255, 0), 2)
+            cv.line(mag, (x, 0), (x, win_size[1] - 1), (0, 0, 0, 0), 3)
+            cv.line(mag, (x, 0), (x, win_size[1] - 1), (0, 255, 255, 0), 1)
         for y in range(cell_size[1], win_size[1], cell_size[1]):
-            cv.line(im, (0, y), (win_size[0] - 1, y), (0, 0, 0, 0), 4)
-            cv.line(im, (0, y), (win_size[0] - 1, y), (0, 255, 255, 0), 2)
-        cv.imwrite(f'results/{os.path.basename(file_path)}', im)
+            cv.line(mag, (0, y), (win_size[0] - 1, y), (0, 0, 0, 0), 3)
+            cv.line(mag, (0, y), (win_size[0] - 1, y), (0, 255, 255, 0), 1)
+        cv.imwrite(f'results/{os.path.basename(file_path)}',
+                   np.concatenate((im, mag), axis=1))
