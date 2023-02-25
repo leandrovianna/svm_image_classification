@@ -17,15 +17,17 @@ python src/select_images.py
 GUI that show images at `images/undefined/` directory and moves to 
 `images/positives/` or `images/negatives/`. Supports skipping and undo.
 
-## Remove duplicate images
+## Remove duplicate images and low contrast ones
 
 ```python
-python src/find_dupes.py
+python src/filter_images.py
 ```
 
-Using image average hash, move to a duplicates directory the image that are
-similar to others in the `images/undefined/` directory. In this case, similar
-means a Hamming distance of the hashes less than or equal to one.
+- Using image average hash, move to a duplicates directory the image that are
+similar to others in the `images/undefined/` directory. 
+- Using entropy of normalized histogram of the image to calculate the 
+*contrast*. If contrast is less than 2, the image has low contrast and it is 
+moved to a "low contrast" directory.
 
 ## Training SVM model
 
