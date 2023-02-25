@@ -1,10 +1,11 @@
 import numpy as np
+import cv2 as cv
+from PIL import ImageTk, Image
 
 import pathlib
 import os
 import tkinter
-from tkinter.constants import BOTH
-from PIL import ImageTk, Image
+from tkinter.constants import BOTH, LEFT
 
 
 class ImageSelector:
@@ -14,12 +15,20 @@ class ImageSelector:
         self.negatives_dir = negatives_dir
         self.undefined_directory = None
         self.tk = None
-        self.big_image_label = None
-        self.small_image_label = None
+        self.left_image_label = None
+        self.right_image_label = None
         self.brightness_label = None
         self.images = None
         self.current = None
         self.journal = None
+
+    def build_button(self, frame, text, command, **kwargs):
+        button = tkinter.Button(frame,
+                                text=text,
+                                font=50,
+                                command=command,
+                                **kwargs)
+        return button
 
     def create_widgets(self):
         self.tk = tkinter.Tk()
@@ -31,61 +40,60 @@ class ImageSelector:
         self.tk.bind_all('<n>', lambda _: self.move_image(False))
         self.tk.bind_all('<s>', lambda _: self.skip(1))
         self.tk.bind_all('<S>', lambda _: self.skip(10))
+        self.tk.bind_all('<Control-s>', lambda _: self.skip(100))
         self.tk.bind_all('<u>', lambda _: self.undo())
         self.tk.bind_all('<q>', lambda _: self.close())
 
-        main_frame = tkinter.Frame(self.tk, borderwidth=5)
+        main_frame = tkinter.Frame(self.tk, borderwidth=0)
         main_frame.pack(fill=BOTH)
         main_frame.bind('<Configure>', lambda e: self.update_ui())
 
-        self.big_image_label = tkinter.Label(main_frame)
-        self.big_image_label.grid(column=0, row=0, rowspan=2, ipadx=5)
+        self.left_image_label = tkinter.Label(main_frame)
+        self.left_image_label.grid(column=0, row=0)
 
-        self.small_image_label = tkinter.Label(main_frame)
-        self.small_image_label.grid(column=1, row=0, ipadx=5)
+        self.right_image_label = tkinter.Label(main_frame)
+        self.right_image_label.grid(column=1, row=0)
 
         self.brightness_label = tkinter.Label(main_frame, font=50)
-        self.brightness_label.grid(column=0, row=2, columnspan=2)
+        self.brightness_label.grid(column=0, row=1, columnspan=2)
 
         controls_frame = tkinter.Frame(main_frame)
-        controls_frame.grid(column=1, row=1)
+        controls_frame.grid(column=0, row=2, columnspan=2)
+        padding = {'padx': 10, 'pady': 10, 'ipadx': 25, 'ipady': 25}
 
-        positive_button = tkinter.Button(controls_frame,
-                                         text="Positive",
-                                         background='green',
-                                         foreground='white',
-                                         activebackground='dark green',
-                                         activeforeground='white',
-                                         font=50,
-                                         command=lambda: self.move_image(True))
-        positive_button.pack(fill=BOTH)
-        negative_button = tkinter.Button(
-            controls_frame,
-            text="Negative",
-            background='red',
-            foreground='white',
-            activebackground='dark red',
-            activeforeground='white',
-            font=50,
-            command=lambda: self.move_image(False))
-        negative_button.pack(fill=BOTH)
-        skip_button = tkinter.Button(controls_frame,
-                                     text="Skip",
-                                     font=50,
-                                     command=lambda: self.skip(1))
-        skip_button.pack(fill=BOTH)
-        skip_more_button = tkinter.Button(controls_frame,
-                                          text="Skip 10",
-                                          font=50,
-                                          command=lambda: self.skip(10))
-        skip_more_button.pack(fill=BOTH)
-        undo_button = tkinter.Button(controls_frame,
-                                     text="Undo",
-                                     font=50,
-                                     command=lambda: self.undo())
-        undo_button.pack(fill=BOTH)
+        positive_button = self.build_button(controls_frame,
+                                            'Positive',
+                                            lambda: self.move_image(True),
+                                            background='green',
+                                            foreground='white',
+                                            activebackground='dark green',
+                                            activeforeground='white')
+        positive_button.pack(side=LEFT, **padding)
+        negative_button = self.build_button(controls_frame,
+                                            'Negative',
+                                            lambda: self.move_image(False),
+                                            background='red',
+                                            foreground='white',
+                                            activebackground='dark red',
+                                            activeforeground='white')
+        negative_button.pack(side=LEFT, **padding)
+        skip_button = self.build_button(controls_frame, 'Skip',
+                                        lambda: self.skip(1))
+        skip_button.pack(side=LEFT, **padding)
+        skip_more_button = self.build_button(controls_frame, 'Skip 10',
+                                             lambda: self.skip(10))
+        skip_more_button.pack(side=LEFT, **padding)
+        skip_much_more_button = self.build_button(controls_frame, 'Skip 100',
+                                                  lambda: self.skip(100))
+        skip_much_more_button.pack(side=LEFT, **padding)
+        undo_button = self.build_button(controls_frame, 'Undo',
+                                        lambda: self.undo())
+        undo_button.pack(side=LEFT, **padding)
 
     def update_ui(self):
+        if self.current < 0 or self.current >= len(self.images):
+            return
+
         current_image = self.images[self.current]
         filename = os.path.basename(current_image)
 
@@ -96,15 +104,16 @@ class ImageSelector:
 
         image = Image.open(current_image)
 
-        self.big_image_label.image = ImageTk.PhotoImage(
-            self.image_resize(image, width=round(0.75 * win_width)))
-        self.big_image_label.configure(image=self.big_image_label.image)
-        self.small_image_label.image = ImageTk.PhotoImage(
-            self.image_resize(image, width=round(0.2 * win_width)))
-        self.small_image_label.configure(image=self.small_image_label.image)
+        self.left_image_label.image = ImageTk.PhotoImage(
+            self.image_resize(image, width=round(0.65 * win_width)))
+        self.left_image_label.configure(image=self.left_image_label.image)
+        self.right_image_label.image = ImageTk.PhotoImage(
+            self.image_gradient(
+                self.image_resize(image, width=round(0.35 * win_width))))
+        self.right_image_label.configure(image=self.right_image_label.image)
         self.brightness_label.configure(
             text=f'{filename} ({self.current+1}/{len(self.images)}) - ' +
-            f'Brightness Level: {self.image_brightness(image):.02f}/255')
+            f'Brightness Level: {self.image_brightness(image)}/255')
 
     def next_image(self):
         self.current += 1
@@ -181,8 +190,8 @@ class ImageSelector:
 
     def image_brightness(self, image):
         gray_image = image.convert('L')
-        value = np.mean(gray_image.getdata())
-        return value
+        value = np.mean(gray_image)
+        return round(value)
 
     def image_resize(self, image, height=None, width=None):
         if height:
@@ -190,6 +199,16 @@ class ImageSelector:
         elif width:
             zoom = width / image.size[0]
         return image.resize(tuple(round(x * zoom) for x in image.size))
+
+    def image_gradient(self, image):
+        im = cv.cvtColor(np.array(image), cv.COLOR_RGB2BGR)
+
+        gx = cv.Sobel(im, cv.CV_32F, 1, 0, ksize=1)
+        gy = cv.Sobel(im, cv.CV_32F, 0, 1, ksize=1)
+        mag, _ = cv.cartToPolar(gx, gy, angleInDegrees=True)
+
+        mag = cv.normalize(mag, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
+        return Image.fromarray(cv.cvtColor(mag, cv.COLOR_BGR2RGB))
 
 
 if __name__ == '__main__':

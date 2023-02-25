@@ -40,26 +40,42 @@ def load_features(negatives_path, positives_path, hog):
     features_pos = []
     with alive_bar(len(negatives_images) + len(positives_images)) as bar:
         for img_path in negatives_images:
-            im = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
-            assert (im is not None)
-            assert (im.shape[::-1] == win_size)
-            features_neg.append(hog.compute(im))
+            data_path = pathlib.Path(
+                f'{img_path}.{cell_size[0]}x{cell_size[1]}.npy')
+            if data_path.is_file():
+                features_neg.append(np.load(data_path))
+            else:
+                im = cv.imread(img_path)
+                assert (im is not None)
+                assert (im.shape[:2][::-1] == win_size)
+                f = hog.compute(im)
+                np.save(data_path, f)
+                features_neg.append(f)
             bar()
 
         for img_path in positives_images:
-            im = cv.imread(img_path, cv.IMREAD_GRAYSCALE)
-            assert (im is not None)
-            assert (im.shape[::-1] == win_size)
-            features_pos.append(hog.compute(im))
+            data_path = pathlib.Path(
+                f'{img_path}.{cell_size[0]}x{cell_size[1]}.npy')
+            if data_path.is_file():
+                features_pos.append(np.load(data_path))
+            else:
+                im = cv.imread(img_path)
+                assert (im is not None)
+                assert (im.shape[:2][::-1] == win_size)
+                f = hog.compute(im)
+                np.save(data_path, f)
+                features_pos.append(f)
             bar()
 
     return features_neg, features_pos
 
 
 def separate_datasets(features_neg, features_pos):
+    random.seed(0)
     random.shuffle(features_neg)
     random.shuffle(features_pos)
-    percent_cut = 0.9
+
+    percent_cut = 0.75
     train_neg_len = int(len(features_neg) * percent_cut)
     train_pos_len = int(len(features_pos) * percent_cut)
     train_data = []
@@ -123,7 +139,7 @@ def train():
 
     summary_data(train_data, train_labels, 'Training')
 
-    svm = setup_svm(C=1.5, gamma=1)
+    svm = setup_svm(C=1, gamma=1)
 
     train_data = np.float32(train_data).reshape(-1, feature_len)
     train_labels = np.int32(train_labels).reshape(-1, 1)
