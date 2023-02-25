@@ -115,7 +115,7 @@ def filter_low_contrast(directory, low_contrast_dir, threshold=2):
 
 
 if __name__ == '__main__':
-    directory = 'images/positives/'
+    directory = 'images/undefined/'
 
     dups_dir = os.path.join(directory, 'copies')
     if not os.path.exists(dups_dir):
