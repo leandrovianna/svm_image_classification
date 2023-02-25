@@ -125,5 +125,5 @@ if __name__ == '__main__':
     if not os.path.exists(low_contrast_dir):
         os.makedirs(low_contrast_dir)
 
-    filter_low_contrast(directory, low_contrast_dir)
+    filter_low_contrast(directory, low_contrast_dir, threshold=3)
     hash_compare(directory, dups_dir)

@@ -4,6 +4,7 @@ from PIL import ImageTk, Image
 
 import pathlib
 import os
+import math
 import tkinter
 from tkinter.constants import BOTH, LEFT
 
@@ -17,7 +18,7 @@ class ImageSelector:
         self.tk = None
         self.left_image_label = None
         self.right_image_label = None
-        self.brightness_label = None
+        self.information_label = None
         self.images = None
         self.current = None
         self.journal = None
@@ -54,8 +55,8 @@ class ImageSelector:
         self.right_image_label = tkinter.Label(main_frame)
         self.right_image_label.grid(column=1, row=0)
 
-        self.brightness_label = tkinter.Label(main_frame, font=50)
-        self.brightness_label.grid(column=0, row=1, columnspan=2)
+        self.information_label = tkinter.Label(main_frame, font=50)
+        self.information_label.grid(column=0, row=1, columnspan=2)
 
         controls_frame = tkinter.Frame(main_frame)
         controls_frame.grid(column=0, row=2, columnspan=2)
@@ -111,9 +112,10 @@ class ImageSelector:
             self.image_gradient(
                 self.image_resize(image, width=round(0.35 * win_width))))
         self.right_image_label.configure(image=self.right_image_label.image)
-        self.brightness_label.configure(
+        self.information_label.configure(
             text=f'{filename} ({self.current+1}/{len(self.images)}) - ' +
-            f'Brightness Level: {self.image_brightness(image)}/255')
+            f'Brightness: {self.image_brightness(image)}/255 - ' +
+            f'Contrast (Entropy): {self.image_contrast(image):.02f}')
 
     def next_image(self):
         self.current += 1
@@ -209,6 +211,13 @@ class ImageSelector:
 
         mag = cv.normalize(mag, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
         return Image.fromarray(cv.cvtColor(mag, cv.COLOR_BGR2RGB))
+
+    def image_contrast(self, image):
+        gray_image = image.convert('L')
+        hist, _ = np.histogram(gray_image, bins=range(256), density=True)
+        hist = hist[hist.nonzero()]
+        entropy = -(hist * np.log(hist) / np.log(math.e)).sum()
+        return entropy
 
 
 if __name__ == '__main__':
