@@ -25,6 +25,17 @@ def hog_setup(win_size, cell_size, n_bins, block_size, block_stride):
     return hog
 
 
+def preprocess(im, win_size):
+    gray = cv.cvtColor(im, cv.COLOR_BGR2GRAY)
+    gaussian = cv.GaussianBlur(gray, (21, 21), 0)
+    _, thresh = cv.threshold(gaussian, 8, 255, cv.THRESH_BINARY)
+    x, y, w, h = cv.boundingRect(thresh)
+    cropped = im[y:y + h, x:x + w]
+    if cropped.shape[0:2][::-1] != win_size:
+        cropped = cv.resize(cropped, win_size, cv.INTER_LINEAR)
+    return cropped
+
+
 def load_features(negatives_path, positives_path, hog):
     negatives_dir = pathlib.Path(negatives_path)
     positives_dir = pathlib.Path(positives_path)
@@ -39,30 +50,28 @@ def load_features(negatives_path, positives_path, hog):
     features_neg = []
     features_pos = []
     with alive_bar(len(negatives_images) + len(positives_images)) as bar:
+        suffix = (f'.{win_size[0]}x{win_size[1]}#{block_size[0]}x' +
+                  f'{block_size[1]}#{cell_size[0]}x{cell_size[1]}.npy')
         for img_path in negatives_images:
-            data_path = pathlib.Path(
-                f'{img_path}.{cell_size[0]}x{cell_size[1]}.npy')
+            data_path = pathlib.Path(f'{img_path}{suffix}')
             if data_path.is_file():
                 features_neg.append(np.load(data_path))
             else:
                 im = cv.imread(img_path)
                 assert (im is not None)
-                assert (im.shape[:2][::-1] == win_size)
-                f = hog.compute(im)
+                f = hog.compute(preprocess(im, win_size))
                 np.save(data_path, f)
                 features_neg.append(f)
             bar()
 
         for img_path in positives_images:
-            data_path = pathlib.Path(
-                f'{img_path}.{cell_size[0]}x{cell_size[1]}.npy')
+            data_path = pathlib.Path(f'{img_path}{suffix}')
             if data_path.is_file():
                 features_pos.append(np.load(data_path))
             else:
                 im = cv.imread(img_path)
                 assert (im is not None)
-                assert (im.shape[:2][::-1] == win_size)
-                f = hog.compute(im)
+                f = hog.compute(preprocess(im, win_size))
                 np.save(data_path, f)
                 features_pos.append(f)
             bar()
