@@ -18,6 +18,7 @@ class ImageSelector:
         self.tk = None
         self.left_image_label = None
         self.right_image_label = None
+        self.thumb_image_label = None
         self.information_label = None
         self.images = None
         self.current = None
@@ -50,16 +51,19 @@ class ImageSelector:
         main_frame.bind('<Configure>', lambda e: self.update_ui())
 
         self.left_image_label = tkinter.Label(main_frame)
-        self.left_image_label.grid(column=0, row=0)
+        self.left_image_label.grid(column=0, row=0, rowspan=2)
 
         self.right_image_label = tkinter.Label(main_frame)
         self.right_image_label.grid(column=1, row=0)
 
+        self.thumb_image_label = tkinter.Label(main_frame)
+        self.thumb_image_label.grid(column=1, row=1)
+
         self.information_label = tkinter.Label(main_frame, font=50)
-        self.information_label.grid(column=0, row=1, columnspan=2)
+        self.information_label.grid(column=0, row=2, columnspan=2)
 
         controls_frame = tkinter.Frame(main_frame)
-        controls_frame.grid(column=0, row=2, columnspan=2)
+        controls_frame.grid(column=0, row=3, columnspan=2)
         padding = {'padx': 10, 'pady': 10, 'ipadx': 25, 'ipady': 25}
 
         positive_button = self.build_button(controls_frame,
@@ -112,6 +116,9 @@ class ImageSelector:
             self.image_gradient(
                 self.image_resize(image, width=round(0.35 * win_width))))
         self.right_image_label.configure(image=self.right_image_label.image)
+        self.thumb_image_label.image = ImageTk.PhotoImage(
+            self.image_resize(image, width=round(0.25 * win_width)))
+        self.thumb_image_label.configure(image=self.thumb_image_label.image)
         self.information_label.configure(
             text=f'{filename} ({self.current+1}/{len(self.images)}) - ' +
             f'Brightness: {self.image_brightness(image)}/255 - ' +
