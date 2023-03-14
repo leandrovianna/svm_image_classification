@@ -217,6 +217,7 @@ class ImageSelector:
         mag, _ = cv.cartToPolar(gx, gy, angleInDegrees=True)
 
         mag = cv.normalize(mag, None, 255, 0, cv.NORM_MINMAX, cv.CV_8U)
+        mag = 255 - mag
         return Image.fromarray(cv.cvtColor(mag, cv.COLOR_BGR2RGB))
 
     def image_contrast(self, image):
