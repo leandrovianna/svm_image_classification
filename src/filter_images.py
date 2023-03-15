@@ -103,10 +103,7 @@ def filter_outliers(directory, outliers_dir):
 def filter_low_contrast(directory, low_contrast_dir, threshold=2):
     for img_path in get_images(directory):
         im = cv.imread(img_path, 0)
-        h, w = im.shape
-        cropped = im[round(h * 0.1):round(h * 0.9),
-                     round(w * 0.1):round(w * 0.9)]
-        metric = entropy(cropped)
+        metric = entropy(im)
         if metric < threshold:
             print(f'{img_path} has low contrast ({metric:.02f})')
             os.rename(
@@ -125,5 +122,5 @@ if __name__ == '__main__':
     if not os.path.exists(low_contrast_dir):
         os.makedirs(low_contrast_dir)
 
-    filter_low_contrast(directory, low_contrast_dir, threshold=2.5)
+    filter_low_contrast(directory, low_contrast_dir, threshold=1)
     hash_compare(directory, dups_dir)

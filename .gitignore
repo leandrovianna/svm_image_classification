@@ -4,3 +4,4 @@ __pycache__
 results/
 images/
 models/
+local_*
