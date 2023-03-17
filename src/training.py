@@ -31,6 +31,8 @@ def preprocess(im, win_size):
     _, thresh = cv.threshold(gaussian, 8, 255, cv.THRESH_BINARY)
     x, y, w, h = cv.boundingRect(thresh)
     cropped = im[y:y + h, x:x + w]
+    if cropped.shape[0:2] == (0, 0):
+        return None
     if cropped.shape[0:2][::-1] != win_size:
         cropped = cv.resize(cropped, win_size, cv.INTER_LINEAR)
     return cropped
@@ -59,9 +61,13 @@ def load_features(negatives_path, positives_path, hog):
             else:
                 im = cv.imread(img_path)
                 assert (im is not None)
-                f = hog.compute(preprocess(im, win_size))
-                np.save(data_path, f)
-                features_neg.append(f)
+                im = preprocess(im, win_size)
+                if im is not None:
+                    f = hog.compute(im)
+                    np.save(data_path, f)
+                    features_neg.append(f)
+                else:
+                    print(f'{img_path} ignored because is darker')
             bar()
 
         for img_path in positives_images:
@@ -71,9 +77,13 @@ def load_features(negatives_path, positives_path, hog):
             else:
                 im = cv.imread(img_path)
                 assert (im is not None)
-                f = hog.compute(preprocess(im, win_size))
-                np.save(data_path, f)
-                features_pos.append(f)
+                im = preprocess(im, win_size)
+                if im is not None:
+                    f = hog.compute(im)
+                    np.save(data_path, f)
+                    features_pos.append(f)
+                else:
+                    print(f'{img_path} ignored because is darker')
             bar()
 
     return features_neg, features_pos
